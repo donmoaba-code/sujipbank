@@ -3,32 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>수집뱅크 통합 검색기</title>
-    
-    <!-- 1. 화면 디자인 도구 (Tailwind CSS) -->
+    <title>수집뱅크 통합 검색기 v2.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 2. 프로그램 구동 엔진 (React) -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- 3. 코드 번역기 (Babel) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
     <style>
         body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
-
     <div id="root"></div>
-
-    <!-- 여기서부터 실제 프로그램 코드입니다 -->
     <script type="text/babel">
-        // 중요: import 문을 쓰지 않고 React 기능을 가져옵니다.
         const { useState } = React;
+        const APP_VERSION = '2.2';
 
-        // --- 아이콘 그림 (오류 방지를 위해 직접 그림) ---
         const Icon = ({ path, className }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 {path}
@@ -42,199 +31,648 @@
             Category: <Icon path={<><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></>} />,
             Filter: <Icon path={<><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>} />,
             Eye: <Icon path={<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>} />,
-            Link: <Icon path={<><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></>} />,
             RadioOn: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-600"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>,
             RadioOff: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-300"><circle cx="12" cy="12" r="10"/></svg>
         };
 
         const CATEGORIES = [
-            { id: '001', label: '한국지폐' }, { id: '002', label: '한국주화' },
-            { id: '003', label: '세계지폐' }, { id: '004', label: '세계주화' },
-            { id: '005', label: '한국우표' }, { id: '006', label: '외국우표' },
+            { id: '001', label: '한국지폐', slot: 0, hasCatalog: true },
+            { id: '002', label: '한국주화', slot: 1, hasCatalog: true },
+            { id: '003', label: '세계지폐', slot: 2 },
+            { id: '004', label: '세계주화', slot: 3 },
+            { id: '005', label: '한국우표', slot: 0 },
+            { id: '006', label: '세계우표', slot: 0 },
         ];
+
+        const KR_BANKNOTE_CATALOG = {
+            id: '001', label: '한국지폐 전체',
+            children: [
+                { id: '001001', label: '구한국은행 이전', children: [
+                    { id: '001001001', label: '호조 태환권' },
+                    { id: '001001035', label: '일본제일은행권' },
+                    { id: '001001036', label: '구한국은행권' },
+                    { id: '001001037', label: '사찰 어음' },
+                ]},
+                { id: '001002', label: '조선은행권', children: [
+                    { id: '001002001', label: '광복이전(1914~44년)', children: [
+                        { id: '001002001001', label: '금권 100원권' }, { id: '001002001002', label: '금권 10원권' },
+                        { id: '001002001003', label: '금권 5원권' }, { id: '001002001004', label: '금권 1원권' },
+                        { id: '001002001005', label: '개 100원권' }, { id: '001002001006', label: '개 10원권' },
+                        { id: '001002001007', label: '개 5원권' }, { id: '001002001008', label: '개 1원권-유번호' },
+                        { id: '001002001009', label: '개 1원권-무번호' }, { id: '001002001010', label: '갑 100원권' },
+                        { id: '001002001011', label: '지급어음 50전-1차' }, { id: '001002001012', label: '지급어음 20전권-1차' },
+                        { id: '001002001013', label: '지급어음 10전권-1차' }, { id: '001002001014', label: '지급어음 50전권-2차' },
+                        { id: '001002001015', label: '지급어음 20전권-2차' }, { id: '001002001016', label: '지급어음 10전권-2차' },
+                        { id: '001002001017', label: '지급어음 50전권-3차' }, { id: '001002001018', label: '지급어음 10전권-3차' },
+                        { id: '001002001019', label: '갑 10원권-유번호' }, { id: '001002001020', label: '갑 10원권-무번호' },
+                        { id: '001002001021', label: '갑 5원권-유번호' }, { id: '001002001022', label: '갑 5원권-무번호' },
+                    ]},
+                    { id: '001002002', label: '광복이후(1945~50년)', children: [
+                        { id: '001002002001', label: '을 100원권' }, { id: '001002002002', label: '을 10원권' },
+                        { id: '001002002003', label: '을 1원권' }, { id: '001002002004', label: '병 100원권' },
+                        { id: '001002002005', label: '병 10원권' }, { id: '001002002006', label: '정 100원권' },
+                        { id: '001002002007', label: '정 10원권' }, { id: '001002002008', label: '무 100원권' },
+                        { id: '001002002009', label: '신 10원권(독립문)' }, { id: '001002002010', label: '신 5원권(독립문)' },
+                        { id: '001002002011', label: '미발행 신1000원권' }, { id: '001002002012', label: '미발행 1000원권' },
+                        { id: '001002002013', label: '미발행 갑1000원권' }, { id: '001002002014', label: '소액 50전권' },
+                        { id: '001002002015', label: '소액 10전권' }, { id: '001002002016', label: '소액 5전권' },
+                    ]},
+                ]},
+                { id: '001003', label: '한국은행권(1960년이전)', children: [
+                    { id: '001003001', label: '원(圓)권(1950~53년)', children: [
+                        { id: '001003001001', label: '1000원권(한복천원)' }, { id: '001003001002', label: '500원권(좌이박/남색지)' },
+                        { id: '001003001003', label: '100원권(광화문)' }, { id: '001003001004', label: '신 1000원권(좌이박)' },
+                    ]},
+                    { id: '001003002', label: '환권(1953~62년)', children: [
+                        { id: '001003002001', label: '1000환권(거북선)' }, { id: '001003002002', label: '100환권(거북선)' },
+                        { id: '001003002003', label: '10환권(거북선)' }, { id: '001003002004', label: '5환권(거북선)' },
+                        { id: '001003002005', label: '1환권(거북선)' }, { id: '001003002006', label: '신 100환권(황색지)' },
+                        { id: '001003002007', label: '신 100환권(백색지)' }, { id: '001003002008', label: '신 10환권(황색지)' },
+                        { id: '001003002009', label: '신 10환권(백색지)' }, { id: '001003002010', label: '500환권(중앙이박)' },
+                        { id: '001003002011', label: '신 1000환권(우이박)' }, { id: '001003002012', label: '개 100환권(우이박)' },
+                        { id: '001003002013', label: '50환권(독립문)' }, { id: '001003002014', label: '신 500환권(우이박)' },
+                        { id: '001003002015', label: '개 1000환권(세종)' }, { id: '001003002016', label: '개 500환권(세종)' },
+                        { id: '001003002017', label: '개갑 100환권(모자상)' },
+                    ]},
+                ]},
+                { id: '001004', label: '한국은행권(1960년이후)', children: [
+                    { id: '001004001', label: '현행권(1962~73년)', children: [
+                        { id: '001004001001', label: '가 500원권(영제)' }, { id: '001004001002', label: '가 100원권(영제)' },
+                        { id: '001004001003', label: '가 50원권(영제)' }, { id: '001004001004', label: '가 10원권(영제)' },
+                        { id: '001004001005', label: '5원권(영제)' }, { id: '001004001006', label: '1원권(영제)' },
+                        { id: '001004001007', label: '나 100원권(경회루)' }, { id: '001004001008', label: '나 10원권(첨성대)' },
+                        { id: '001004001009', label: '50전권' }, { id: '001004001010', label: '10전권' },
+                        { id: '001004001011', label: '나 500원권(남대문)' }, { id: '001004001012', label: '다 100원권(세종)' },
+                        { id: '001004001013', label: '나 50원권(팔각정)' },
+                    ]},
+                    { id: '001004002', label: '현행권(1973년이후)', children: [
+                        { id: '001004002001', label: '가 10,000원권(1차)' }, { id: '001004002002', label: '가 5,000원권(1차)' },
+                        { id: '001004002003', label: '다 500원권(이순신)' }, { id: '001004002004', label: '나 10,000원권(2차)' },
+                        { id: '001004002005', label: '나 5,000원권(2차)' }, { id: '001004002006', label: '가 1,000원권(1차)' },
+                        { id: '001004002007', label: '다 10,000원권(3차)' }, { id: '001004002008', label: '다 5,000원권(3차)' },
+                        { id: '001004002009', label: '나 1,000원권(2차)' }, { id: '001004002010', label: '라 10,000원권(4차)' },
+                        { id: '001004002011', label: '마 10,000원권(5차)' }, { id: '001004002012', label: '라 5,000원권(4차)' },
+                        { id: '001004002013', label: '바 10,000원권(6차)' }, { id: '001004002014', label: '마 5,000원권(5차)' },
+                        { id: '001004002015', label: '다 1,000원권(3차)' }, { id: '001004002016', label: '가 50,000원권(1차)' },
+                    ]},
+                    { id: '001004003', label: '구매권' },
+                    { id: '001004004', label: '연결형은행권', children: [
+                        { id: '001004004001', label: '전지 2차 천원' }, { id: '001004004002', label: '전지 3차 천원' },
+                        { id: '001004004003', label: '4매 2차천원 2002' }, { id: '001004004004', label: '4매 2차천원 2004' },
+                        { id: '001004004005', label: '4매 2차천원 2005' }, { id: '001004004006', label: '4매 3차천원 2016' },
+                        { id: '001004004007', label: '4매 5차오천원 2016' }, { id: '001004004008', label: '2매 2차천원 2001' },
+                        { id: '001004004009', label: '2매 2차천원 2002' }, { id: '001004004010', label: '2매 2차천원 2003' },
+                        { id: '001004004011', label: '2매 2차천원 2004' }, { id: '001004004012', label: '2매 2차천원 2005' },
+                        { id: '001004004013', label: '2매 3차천원 2009' }, { id: '001004004014', label: '2매 3차천원 2013' },
+                        { id: '001004004015', label: '2매 3차천원 2014' }, { id: '001004004016', label: '2매 3차천원 2015' },
+                        { id: '001004004017', label: '2매 4차오천원 2002' }, { id: '001004004018', label: '2매 4차오천원 2003' },
+                        { id: '001004004019', label: '2매 4차오천원 2004' }, { id: '001004004020', label: '2매 4차오천원 2005' },
+                        { id: '001004004021', label: '2매 5차오천원 2007' }, { id: '001004004022', label: '2매 5차오천원 2013' },
+                        { id: '001004004023', label: '2매 5차오천원 2014' }, { id: '001004004024', label: '2매 5차만원 2006' },
+                        { id: '001004004025', label: '2매 6차만원 2011' }, { id: '001004004026', label: '2매 6차만원 2012' },
+                        { id: '001004004027', label: '2매 6차만원 2017' }, { id: '001004004028', label: '2매 5차오천원 2020' },
+                        { id: '001004004029', label: '2매 3차천원 2020' }, { id: '001004004030', label: '4매 3차천원 2020' },
+                        { id: '001004004031', label: '전지 3차천원 2021' }, { id: '001004004032', label: '16매 5차오천원 2021' },
+                        { id: '001004004033', label: '2매 6차만원 2022' }, { id: '001004004034', label: '2매 5차오천원 2022' },
+                        { id: '001004004035', label: '2매 3차천원 2022' }, { id: '001004004036', label: '4매 5차오천원 2022' },
+                        { id: '001004004037', label: '4매 6차만원 2022' }, { id: '001004004038', label: '2매 오만원 2024' },
+                        { id: '001004004039', label: '2매 3차천원 2024' }, { id: '001004004040', label: '2매 5차오천원 2024' },
+                        { id: '001004004041', label: '2매 6차만원 2024' }, { id: '001004004042', label: '4매 3차천원 2024' },
+                        { id: '001004004043', label: '4매 5차오천원 2024' }, { id: '001004004044', label: '4매 6차만원 2024' },
+                        { id: '001004004045', label: '16매 5차오천원 2025' }, { id: '001004004046', label: '2매 3차천원 2023' },
+                        { id: '001004004047', label: '2매 5차오천원 2023' }, { id: '001004004048', label: '2매 6차만원 2023' },
+                    ]},
+                    { id: '001004005', label: '기념은행권 (2018 평창동계올림픽)' },
+                    { id: '001004006', label: '테스트노트' },
+                ]},
+            ],
+        };
+
+        const KR_COIN_CATALOG = {
+            id: '002', label: '한국주화 전체',
+            children: [
+                { id: '002001', label: '고전', children: [
+                    { id: '002001001', label: '고려시대', children: [
+                        { id: '002001001001', label: '무문전' }, { id: '002001001002', label: '건원중보' },
+                        { id: '002001001003', label: '개원통보' }, { id: '002001001004', label: '동국중보' },
+                        { id: '002001001005', label: '동국통보' }, { id: '002001001006', label: '해동원보' },
+                        { id: '002001001007', label: '해동통보' }, { id: '002001001008', label: '해동중보' },
+                        { id: '002001001009', label: '삼한통보' }, { id: '002001001010', label: '삼한중보' },
+                    ]},
+                    { id: '002001002', label: '조선시대', children: [
+                        { id: '002001002001', label: '조선통보' }, { id: '002001002002', label: '십전통보' },
+                        { id: '002001002003', label: '상평통보' }, { id: '002001002004', label: '상평통보 모전' },
+                        { id: '002001002005', label: '상평통보 단자' }, { id: '002001002006', label: '상평통보 당일' },
+                        { id: '002001002007', label: '상평통보 당이' }, { id: '002001002008', label: '상평통보 중형' },
+                        { id: '002001002009', label: '상평통보 당오' }, { id: '002001002010', label: '상평통보 당백' },
+                        { id: '002001002011', label: '상평통보 세트' },
+                    ]},
+                    { id: '002001003', label: '별전', children: [
+                        { id: '002001003001', label: '기하도형전' }, { id: '002001003002', label: '도화전' },
+                        { id: '002001003003', label: '동물전' }, { id: '002001003004', label: '문자전' },
+                        { id: '002001003005', label: '부조전' }, { id: '002001003006', label: '부채전' },
+                        { id: '002001003007', label: '식물전' }, { id: '002001003008', label: '실패전' },
+                        { id: '002001003009', label: '투조전' }, { id: '002001003010', label: '오행전' },
+                        { id: '002001003011', label: '와당전' }, { id: '002001003012', label: '화형' },
+                        { id: '002001003013', label: '기타전' },
+                    ]},
+                    { id: '002001004', label: '열쇠패' },
+                ]},
+                { id: '002002', label: '근대주화', children: [
+                    { id: '002002001', label: '조선시대', children: [
+                        { id: '002002001001', label: '대동전' }, { id: '002002001002', label: '당오전 시주화' },
+                        { id: '002002001003', label: '을유년 시주화' }, { id: '002002001004', label: '태극장 시주화' },
+                        { id: '002002001005', label: '1원은화(태극)' }, { id: '002002001006', label: '십문 청동화(태극)' },
+                        { id: '002002001007', label: '오문 청동화(태극)' }, { id: '002002001008', label: '일원 은화(이화)' },
+                        { id: '002002001009', label: '닷량 은화' }, { id: '002002001010', label: '한량 은화' },
+                        { id: '002002001011', label: '두돈오푼 백동화' }, { id: '002002001012', label: '오푼 청동화' },
+                        { id: '002002001013', label: '한푼 황동화' },
+                    ]},
+                    { id: '002002002', label: '대한제국시대', children: [
+                        { id: '002002002001', label: '이십원 금화' }, { id: '002002002002', label: '십원 금화' },
+                        { id: '002002002003', label: '오원 금화' }, { id: '002002002004', label: '반원 은화(大)' },
+                        { id: '002002002005', label: '반원 은화(小)' }, { id: '002002002006', label: '이십전 은화(大)' },
+                        { id: '002002002007', label: '이십전 은화(小)' }, { id: '002002002008', label: '십전 은화' },
+                        { id: '002002002009', label: '오전 백동화' }, { id: '002002002010', label: '일전 청동화(대형)' },
+                        { id: '002002002011', label: '일전 청동화(소형)' }, { id: '002002002012', label: '반전 청동화(大)' },
+                        { id: '002002002013', label: '반전 청동화(小)' }, { id: '002002002014', label: '반원 은화(독수리)' },
+                        { id: '002002002015', label: '오전 백동화(독수리)' }, { id: '002002002016', label: '일전 청동화(독수리)' },
+                        { id: '002002002017', label: '시주화(독수리)' },
+                    ]},
+                ]},
+                { id: '002003', label: '현행주화', children: [
+                    { id: '002003001', label: '100환', children: [{ id: '002003001001', label: '그레이딩' }] },
+                    { id: '002003002', label: '50환', children: [{ id: '002003002001', label: '그레이딩' }] },
+                    { id: '002003003', label: '10환', children: [{ id: '002003003001', label: '그레이딩' }] },
+                    { id: '002003004', label: '500원', children: [
+                        { id: '002003004001', label: '그레이딩' }, { id: '002003004002', label: '미사용' },
+                        { id: '002003004003', label: '사용제' },
+                    ]},
+                    { id: '002003005', label: '100원', children: [
+                        { id: '002003005001', label: '그레이딩' }, { id: '002003005002', label: '미사용' },
+                        { id: '002003005003', label: '사용제' },
+                    ]},
+                    { id: '002003006', label: '50원', children: [
+                        { id: '002003006001', label: '그레이딩' }, { id: '002003006002', label: '미사용' },
+                        { id: '002003006003', label: '사용제' },
+                    ]},
+                    { id: '002003007', label: '10원', children: [
+                        { id: '002003007001', label: '그레이딩' }, { id: '002003007002', label: '미사용' },
+                        { id: '002003007003', label: '사용제' },
+                    ]},
+                    { id: '002003010', label: '5원', children: [
+                        { id: '002003010001', label: '그레이딩' }, { id: '002003010002', label: '미사용' },
+                        { id: '002003010003', label: '사용제' },
+                    ]},
+                    { id: '002003008', label: '1원', children: [
+                        { id: '002003008001', label: '그레이딩' }, { id: '002003008002', label: '미사용' },
+                        { id: '002003008003', label: '사용제' },
+                    ]},
+                    { id: '002003009', label: '민트세트', children: [
+                        { id: '002003009001', label: '한국은행 민트' }, { id: '002003009002', label: '한국조폐공사 민트' },
+                        { id: '002003009003', label: '기타 주화세트' },
+                    ]},
+                ]},
+                { id: '002004', label: '기념주화/메달', children: [
+                    { id: '002004001', label: '대한민국 오천년 영광사' },
+                    { id: '002004002', label: '광복 30주년' },
+                    { id: '002004003', label: '제42회 세계사격선수권대회' },
+                    { id: '002004004', label: '제5공화국출범' },
+                    { id: '002004005', label: '제24회 올림픽대회유치' },
+                    { id: '002004006', label: '천주교전래 200주년' },
+                    { id: '002004007', label: '제10회 서울아시안게임' },
+                    { id: '002004008', label: '제24회 서울올림픽' },
+                    { id: '002004009', label: '대전 엑스포' },
+                    { id: '002004010', label: '광복 50주년' },
+                    { id: '002004011', label: '유엔창설50주년' },
+                    { id: '002004012', label: '정부수립 50주년' },
+                    { id: '002004013', label: '새천년' },
+                    { id: '002004014', label: '한국은행 창립기념' },
+                    { id: '002004015', label: '제3차 아시아유럽정상회의' },
+                    { id: '002004016', label: '2002 한일월드컵' },
+                    { id: '002004017', label: '부산아시안게임' },
+                    { id: '002004018', label: '광복 60주년' },
+                    { id: '002004019', label: 'APEC정상회의' },
+                    { id: '002004020', label: '한글날 560돌' },
+                    { id: '002004021', label: '민속놀이' },
+                    { id: '002004022', label: '건국 60주년' },
+                    { id: '002004023', label: '서울G20정상회의' },
+                    { id: '002004024', label: '한국조폐공사메달' },
+                    { id: '002004025', label: '유네스코문화유산' },
+                    { id: '002004026', label: '2011대구세계육상선수권대회' },
+                    { id: '002004027', label: '서울핵안보정상회의' },
+                    { id: '002004028', label: '기타메달', children: [
+                        { id: '002004028001', label: '수향시리즈' },
+                    ]},
+                    { id: '002004029', label: '여수엑스포' },
+                    { id: '002004030', label: '세계자연보호총회' },
+                    { id: '002004031', label: '숭례문 복구 기념주화' },
+                    { id: '002004032', label: '나로호발사성공' },
+                    { id: '002004033', label: '한국의 문화유산' },
+                    { id: '002004034', label: '인천아시아경기대회' },
+                    { id: '002004035', label: '교황방문' },
+                    { id: '002004036', label: '광복 70주년' },
+                    { id: '002004038', label: '2015 세계군인체육대회' },
+                    { id: '002004039', label: '평창동계올림픽' },
+                    { id: '002004040', label: '국립공원' },
+                    { id: '002004041', label: '3·1운동 및 임시정부수립' },
+                    { id: '002004042', label: '2019 광주FINA 세계수영선수권' },
+                    { id: '002004043', label: '제100회 전국체육대회' },
+                    { id: '002004044', label: '2020년대', children: [
+                        { id: '002004044001', label: '새만금 세계스카우트잼버리' },
+                        { id: '002004044002', label: '누리호발사성공' },
+                        { id: '002004044003', label: '순천만국제정원박람회' },
+                        { id: '002004044004', label: '한국 명산의 사계' },
+                        { id: '002004044005', label: '한국의 센서스 100년' },
+                        { id: '002004044006', label: '광복 80년' },
+                        { id: '002004044007', label: '2025 APEC정상회의' },
+                    ]},
+                ]},
+            ],
+        };
+
+        const CATALOG_MAP = {
+            '001': KR_BANKNOTE_CATALOG,
+            '002': KR_COIN_CATALOG,
+        };
 
         const SORT_OPTIONS = [
             { value: '', label: '추천순' }, { value: 'orderCnt', label: '인기순' },
-            { value: 'price_asc', label: '낮은가격' }, { value: 'price_desc', label: '높은가격' },
+            { value: 'price_asc', label: '낮은가격' }, { value: 'price_dsc', label: '높은가격' },
             { value: 'regDt', label: '등록일순' },
         ];
-
         const PAGE_SIZE_OPTIONS = ['30', '60', '90', '120'];
 
-        // 메인 프로그램 로직
+        const joinKeywordsForSearch = (keywords) => {
+            if (keywords.length === 0) return '';
+            if (keywords.length === 1) return keywords[0];
+            return keywords.join('%');
+        };
+
+        const findCatalogNode = (node, id) => {
+            if (node.id === id) return node;
+            if (!node.children) return null;
+            for (const child of node.children) {
+                const found = findCatalogNode(child, id);
+                if (found) return found;
+            }
+            return null;
+        };
+
+        const getAncestorIds = (node, targetId, path = []) => {
+            if (node.id === targetId) return path;
+            if (!node.children) return null;
+            for (const child of node.children) {
+                const result = getAncestorIds(child, targetId, [...path, node.id]);
+                if (result) return result;
+            }
+            return null;
+        };
+
+        const getCatalogBreadcrumb = (catalogRoot, catalogId) => {
+            const ancestors = getAncestorIds(catalogRoot, catalogId) || [];
+            return [...ancestors, catalogId]
+                .map(id => findCatalogNode(catalogRoot, id))
+                .filter(Boolean)
+                .map(n => n.label);
+        };
+
+        // goods_list.php는 keyword 파라미터를 무시함 → 검색어 있으면 퀵검색 사용
+        // 그레이딩·미사용 등은 상품명에 없어 검색어로 쓰면 0건 → 제외
+        const CATALOG_SKIP_TERMS = new Set([
+            '그레이딩', '미사용', '사용제',
+            '한국지폐 전체', '한국주화 전체', '현행주화', '현행권',
+            '고전', '근대주화', '기념주화/메달', '민트세트',
+        ]);
+
+        const getCatalogSearchTerms = (catalogRoot, catalogId) => {
+            const node = findCatalogNode(catalogRoot, catalogId);
+            if (!node || catalogId === catalogRoot.id) return [];
+
+            const paren = node.label.match(/\(([^)]+)\)/);
+            if (paren && !CATALOG_SKIP_TERMS.has(paren[1])) return [paren[1]];
+
+            const crumbs = getCatalogBreadcrumb(catalogRoot, catalogId).filter(l => l !== catalogRoot.label);
+            for (let i = crumbs.length - 1; i >= 0; i--) {
+                const label = crumbs[i];
+                if (CATALOG_SKIP_TERMS.has(label)) continue;
+                const mp = label.match(/\(([^)]+)\)/);
+                if (mp && !CATALOG_SKIP_TERMS.has(mp[1])) return [mp[1]];
+                if (/^\d+원$/.test(label) || /\d+원권/.test(label) || /\d+환/.test(label)) return [label];
+            }
+            const last = crumbs.filter(l => !CATALOG_SKIP_TERMS.has(l)).pop();
+            return last ? [last] : [];
+        };
+
+        const buildQuickSearchParams = (categoryId, keyword) => {
+            const slots = ['', '', '', ''];
+            const cat = CATEGORIES.find(c => c.id === categoryId);
+            if (cat) slots[cat.slot] = categoryId;
+            const params = ['mode=quick'];
+            slots.forEach(val => params.push(`quickCateGoods[]=${val}`));
+            params.push('goodsPrice[]=', 'goodsPrice[]=');
+            params.push(`keyword=${encodeURIComponent(keyword)}`);
+            return params;
+        };
+
+        function CatalogTreeNode({ node, selectedId, onSelect, expandedIds, toggleExpand, depth }) {
+            const hasChildren = node.children && node.children.length > 0;
+            const isExpanded = expandedIds.has(node.id);
+            const isSelected = selectedId === node.id;
+
+            return (
+                <div>
+                    <div
+                        className={`flex items-center gap-1 py-1.5 pr-2 rounded-lg cursor-pointer text-sm transition-colors ${isSelected ? 'bg-blue-100 text-blue-900 font-bold' : 'hover:bg-slate-50 text-slate-700'}`}
+                        style={{ paddingLeft: `${depth * 14 + 8}px` }}
+                        onClick={() => onSelect(node.id)}
+                    >
+                        {hasChildren ? (
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); toggleExpand(node.id); }}
+                                className="w-5 h-5 shrink-0 text-xs text-slate-400 hover:text-blue-600"
+                            >
+                                {isExpanded ? '▼' : '▶'}
+                            </button>
+                        ) : <span className="w-5 shrink-0" />}
+                        <span className="flex-1 leading-snug">{node.label}</span>
+                        <span className="text-[10px] text-slate-400 font-mono shrink-0">{node.id}</span>
+                    </div>
+                    {hasChildren && isExpanded && node.children.map(child => (
+                        <CatalogTreeNode
+                            key={child.id}
+                            node={child}
+                            selectedId={selectedId}
+                            onSelect={onSelect}
+                            expandedIds={expandedIds}
+                            toggleExpand={toggleExpand}
+                            depth={depth + 1}
+                        />
+                    ))}
+                </div>
+            );
+        }
+
         function App() {
-            const [keyword, setKeyword] = useState('');
+            const [inputValue, setInputValue] = useState('');
+            const [keywords, setKeywords] = useState([]);
             const [selectedCat, setSelectedCat] = useState('');
+            const [selectedCatalogId, setSelectedCatalogId] = useState('');
+            const [expandedIds, setExpandedIds] = useState(new Set());
             const [sortMethod, setSortMethod] = useState('');
             const [itemsPerPage, setItemsPerPage] = useState('30');
-            const [searchUrl, setSearchUrl] = useState('');
 
-            // 카테고리 클릭 (선택/해제 토글)
+            const activeCatalog = CATALOG_MAP[selectedCat] || null;
+            const isCatalogMode = !!activeCatalog;
+
             const handleCategoryClick = (id) => {
-                setSelectedCat(prev => prev === id ? '' : id);
+                setSelectedCat(prev => {
+                    if (prev === id) {
+                        setSelectedCatalogId('');
+                        setExpandedIds(new Set());
+                        return '';
+                    }
+                    if (CATALOG_MAP[id]) {
+                        setSelectedCatalogId(id);
+                        setExpandedIds(new Set([id]));
+                    } else {
+                        setSelectedCatalogId('');
+                        setExpandedIds(new Set());
+                    }
+                    return id;
+                });
+            };
+
+            const toggleExpand = (id) => {
+                setExpandedIds(prev => {
+                    const next = new Set(prev);
+                    if (next.has(id)) next.delete(id);
+                    else next.add(id);
+                    return next;
+                });
+            };
+
+            const handleCatalogSelect = (id) => {
+                setSelectedCatalogId(id);
+                if (!activeCatalog) return;
+                const ancestors = getAncestorIds(activeCatalog, id) || [];
+                setExpandedIds(prev => new Set([...prev, ...ancestors, id]));
+            };
+
+            const addKeyword = () => {
+                const trimmed = inputValue.trim();
+                if (!trimmed || keywords.includes(trimmed)) return;
+                setKeywords(prev => [...prev, trimmed]);
+                setInputValue('');
+            };
+
+            const removeKeyword = (index) => {
+                setKeywords(prev => prev.filter((_, i) => i !== index));
+            };
+
+            const getSearchKeywords = () => {
+                const trimmed = inputValue.trim();
+                if (!trimmed) return keywords;
+                if (keywords.includes(trimmed)) return keywords;
+                return [...keywords, trimmed];
             };
 
             const resetAll = () => {
-                setKeyword(''); setSelectedCat('');
-                setSortMethod(''); setItemsPerPage('30'); setSearchUrl('');
+                setInputValue(''); setKeywords([]); setSelectedCat('');
+                setSelectedCatalogId(''); setExpandedIds(new Set());
+                setSortMethod(''); setItemsPerPage('30');
+            };
+
+            const buildSearchUrl = (searchKeywords) => {
+                const combinedKeyword = joinKeywordsForSearch(searchKeywords);
+
+                if (isCatalogMode && selectedCatalogId && activeCatalog) {
+                    if (combinedKeyword) {
+                        const catalogTerms = getCatalogSearchTerms(activeCatalog, selectedCatalogId);
+                        const searchTerms = catalogTerms.length
+                            ? [...catalogTerms, ...searchKeywords]
+                            : searchKeywords;
+                        const baseUrl = 'https://www.sujipbank.com/goods/goods_search.php';
+                        const params = buildQuickSearchParams(selectedCat, joinKeywordsForSearch(searchTerms));
+                        if (sortMethod) params.push(`sort=${sortMethod}`);
+                        params.push(`pageNum=${itemsPerPage}`);
+                        return `${baseUrl}?${params.join('&')}`;
+                    }
+                    const baseUrl = 'https://www.sujipbank.com/goods/goods_list.php';
+                    const params = [`cateCd=${selectedCatalogId}`];
+                    if (sortMethod) params.push(`sort=${sortMethod}`);
+                    params.push(`pageNum=${itemsPerPage}`);
+                    return `${baseUrl}?${params.join('&')}`;
+                }
+
+                const baseUrl = 'https://www.sujipbank.com/goods/goods_search.php';
+                if (selectedCat) {
+                    const slots = ['', '', '', ''];
+                    const cat = CATEGORIES.find(c => c.id === selectedCat);
+                    if (cat) slots[cat.slot] = selectedCat;
+                    const params = ['mode=quick'];
+                    slots.forEach(val => params.push(`quickCateGoods[]=${val}`));
+                    params.push('goodsPrice[]=', 'goodsPrice[]=');
+                    params.push(`keyword=${encodeURIComponent(combinedKeyword)}`);
+                    if (sortMethod) params.push(`sort=${sortMethod}`);
+                    params.push(`pageNum=${itemsPerPage}`);
+                    return `${baseUrl}?${params.join('&')}`;
+                }
+
+                const params = [`keyword=${encodeURIComponent(combinedKeyword)}`];
+                if (sortMethod) params.push(`sort=${sortMethod}`);
+                params.push(`pageNum=${itemsPerPage}`);
+                return `${baseUrl}?${params.join('&')}`;
             };
 
             const executeSearch = () => {
-                const baseUrl = 'https://www.sujipbank.com/goods/goods_search.php';
-                const params = [];
-
-                // 1. 카테고리 (단일 선택)
-                if (selectedCat) {
-                    params.push('mode=quick');
-                    params.push(`quickCateGoods[]=${selectedCat}`);
+                const searchKeywords = getSearchKeywords();
+                if (inputValue.trim() && !keywords.includes(inputValue.trim())) {
+                    setKeywords(searchKeywords);
+                    setInputValue('');
                 }
-
-                // 2. 검색어
-                params.push(`keyword=${encodeURIComponent(keyword.trim())}`);
-
-                // 3. 옵션
-                if (sortMethod) params.push(`sort=${sortMethod}`);
-                params.push(`pageNum=${itemsPerPage}`);
-
-                const finalUrl = `${baseUrl}?${params.join('&')}`;
-                setSearchUrl(finalUrl);
-                
-                // 새 창 열기
-                window.open(finalUrl, '_blank');
+                window.open(buildSearchUrl(searchKeywords), '_blank');
             };
 
             return (
-                <div className="min-h-screen flex items-center justify-center p-4">
-                    <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-                        
-                        {/* 상단 제목 */}
-                        <div className="bg-white p-8 border-b border-gray-100 flex justify-between items-center">
-                            <div>
-                                <h1 className="text-3xl font-extrabold text-blue-900 flex items-center gap-3">
-                                    <span className="text-blue-600">{Icons.Search}</span>
-                                    수집뱅크 통합 검색
-                                </h1>
-                                <p className="text-gray-500 mt-2 text-sm">
-                                    검색 버튼을 누르면 <b>새 창</b>에서 결과가 열립니다.
-                                </p>
-                            </div>
-                            <button onClick={resetAll} className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold text-gray-600 transition-colors">
+                <div className="min-h-screen flex items-start justify-center px-4 pt-4 pb-8">
+                    <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+                        <div className="bg-white px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+                            <h1 className="text-xl font-extrabold text-blue-900 flex items-center gap-2 shrink-0">
+                                <span className="text-blue-600">{Icons.Search}</span>
+                                수집뱅크 통합 검색
+                                <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">v{APP_VERSION}</span>
+                            </h1>
+                            <button onClick={executeSearch} className="flex-1 max-w-xs h-9 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow transition-colors flex items-center justify-center gap-2">
+                                {Icons.Search} {isCatalogMode ? '카탈로그 조회 (새 창)' : '검색 결과 보기 (새 창)'}
+                            </button>
+                            <button onClick={resetAll} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold text-gray-600 transition-colors shrink-0">
                                 {Icons.Reset} 초기화
                             </button>
                         </div>
 
-                        {/* 입력 영역 */}
-                        <div className="p-8 space-y-8">
-                            
-                            {/* 검색어 */}
+                        <div className="p-5 space-y-5">
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">검색어 입력</label>
-                                <div className="relative">
-                                    <input 
-                                        type="text" 
-                                        value={keyword}
-                                        onChange={(e) => setKeyword(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && executeSearch()}
-                                        placeholder="예: 1000원, 올림픽 (비워두면 전체 검색)"
-                                        className="w-full h-14 pl-5 pr-12 border-2 border-gray-200 rounded-xl text-lg focus:border-blue-500 focus:outline-none transition-colors"
-                                    />
-                                    {keyword && (
-                                        <button onClick={() => setKeyword('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500">
-                                            {Icons.Close}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            <hr className="border-gray-100"/>
-
-                            {/* 카테고리 (단일선택) */}
-                            <div>
-                                <div className="flex items-center gap-2 mb-3">
-                                    <span className="text-gray-600">{Icons.Category}</span>
-                                    <span className="font-bold text-gray-700">카테고리 선택</span>
-                                    <span className="text-xs bg-red-50 text-red-500 px-2 py-1 rounded-full font-bold">1개만 선택 가능</span>
-                                </div>
-                                <div className="flex flex-wrap gap-3">
-                                    {CATEGORIES.map(cat => (
-                                        <div 
-                                            key={cat.id}
-                                            onClick={() => handleCategoryClick(cat.id)}
-                                            className={`
-                                                flex items-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all select-none
-                                                ${selectedCat === cat.id 
-                                                    ? 'border-blue-500 bg-blue-50 text-blue-800 font-bold shadow-sm' 
-                                                    : 'border-gray-100 bg-white text-gray-600 hover:border-gray-300'
+                                <div className="flex items-center gap-2">
+                                    <label className="text-xs font-bold text-gray-700 shrink-0 whitespace-nowrap">검색어 입력 (선택)</label>
+                                    <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full font-bold shrink-0">단계별 AND</span>
+                                    <div className="relative flex-1 min-w-0">
+                                        <input
+                                            type="text"
+                                            value={inputValue}
+                                            onChange={(e) => setInputValue(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    inputValue.trim() ? addKeyword() : executeSearch();
                                                 }
-                                            `}
-                                        >
-                                            {selectedCat === cat.id ? Icons.RadioOn : Icons.RadioOff}
-                                            {cat.label}
-                                        </div>
-                                    ))}
+                                            }}
+                                            placeholder="단어 입력 후 Enter 또는 [추가]"
+                                            className="w-full h-8 pl-3 pr-8 border border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:outline-none transition-colors"
+                                        />
+                                        {inputValue && (
+                                            <button onClick={() => setInputValue('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500">
+                                                {Icons.Close}
+                                            </button>
+                                        )}
+                                    </div>
+                                    <button onClick={addKeyword} disabled={!inputValue.trim()} className="h-8 px-3 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-bold text-slate-700 transition-colors whitespace-nowrap shrink-0">
+                                        + 추가
+                                    </button>
                                 </div>
+                                <p className="text-xs text-gray-400 mt-2">
+                                    여러 단어를 추가하면 <b>%</b>로 연결됩니다. 예: 팔각정 → 6번 = <code className="text-blue-600">팔각정%6번</code>
+                                </p>
+                                {keywords.length > 0 && (
+                                    <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                        <div className="text-xs font-bold text-slate-500 mb-3">검색 단계 (모두 포함)</div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {keywords.map((kw, index) => (
+                                                <React.Fragment key={`${kw}-${index}`}>
+                                                    {index > 0 && <span className="text-blue-500 font-bold text-sm">%</span>}
+                                                    <span className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-bold text-blue-900">
+                                                        <span className="text-xs text-blue-400">{index + 1}</span>
+                                                        {kw}
+                                                        <button onClick={() => removeKeyword(index)} className="text-gray-300 hover:text-red-500">{Icons.Close}</button>
+                                                    </span>
+                                                </React.Fragment>
+                                            ))}
+                                        </div>
+                                        {keywords.length > 1 && (
+                                            <div className="mt-3 text-xs text-blue-700 font-mono bg-blue-50 px-3 py-2 rounded-lg">
+                                                실제 검색어: {joinKeywordsForSearch(keywords)}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <hr className="border-gray-100"/>
 
-                            {/* 옵션 설정 */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-3 text-gray-700 font-bold">
-                                        {Icons.Filter} 정렬 방식
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-gray-600 shrink-0">{Icons.Category}</span>
+                                <span className="text-xs font-bold text-gray-700 shrink-0">카테고리 선택</span>
+                                <span className="text-[10px] bg-red-50 text-red-500 px-1.5 py-0.5 rounded-full font-bold shrink-0">1개만</span>
+                                {CATEGORIES.map(cat => (
+                                    <div
+                                        key={cat.id}
+                                        onClick={() => handleCategoryClick(cat.id)}
+                                        className={`flex items-center gap-1 px-2 py-1 rounded-md border cursor-pointer transition-all select-none text-xs ${selectedCat === cat.id ? 'border-blue-500 bg-blue-50 text-blue-800 font-bold' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}
+                                    >
+                                        {selectedCat === cat.id ? Icons.RadioOn : Icons.RadioOff}
+                                        {cat.label}
+                                        {cat.hasCatalog && <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1 rounded">카탈로그</span>}
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {SORT_OPTIONS.map(opt => (
-                                            <button 
-                                                key={opt.value}
-                                                onClick={() => setSortMethod(opt.value)}
-                                                className={`px-3 py-2 text-sm rounded-lg border transition-colors ${sortMethod === opt.value ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-400'}`}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2 mb-3 text-gray-700 font-bold">
-                                        {Icons.Eye} 보기 갯수
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {PAGE_SIZE_OPTIONS.map(size => (
-                                            <button 
-                                                key={size}
-                                                onClick={() => setItemsPerPage(size)}
-                                                className={`px-3 py-2 text-sm rounded-lg border transition-colors ${itemsPerPage === size ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-400'}`}
-                                            >
-                                                {size}개씩
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
+                                ))}
                             </div>
 
-                            {/* 검색 버튼 */}
-                            <button 
-                                onClick={executeSearch}
-                                className="w-full h-16 bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold rounded-xl shadow-lg transition-transform active:scale-[0.98] flex items-center justify-center gap-3"
-                            >
-                                {Icons.Search} 검색 결과 보기 (새 창)
-                            </button>
+                            {isCatalogMode && activeCatalog && (
+                                <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="font-bold text-emerald-900 text-sm">{CATEGORIES.find(c => c.id === selectedCat)?.label} 카탈로그</span>
+                                        <span className="text-xs text-emerald-600">▶ 클릭하여 펼치기 · 항목 선택</span>
+                                    </div>
+                                    {selectedCatalogId && (
+                                        <div className="mb-3 px-3 py-2 bg-white rounded-lg border border-emerald-200 text-sm">
+                                            <span className="text-emerald-700 font-bold">선택: </span>
+                                            {getCatalogBreadcrumb(activeCatalog, selectedCatalogId).join(' › ')}
+                                            <span className="ml-2 text-xs font-mono text-slate-400">cateCd={selectedCatalogId}</span>
+                                        </div>
+                                    )}
+                                    <div className="max-h-[32rem] overflow-y-auto bg-white rounded-lg border border-emerald-100 p-2">
+                                        <CatalogTreeNode
+                                            node={activeCatalog}
+                                            selectedId={selectedCatalogId}
+                                            onSelect={handleCatalogSelect}
+                                            expandedIds={expandedIds}
+                                            toggleExpand={toggleExpand}
+                                            depth={0}
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
+                            <hr className="border-gray-100"/>
+
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs text-gray-700 font-bold shrink-0 flex items-center gap-1">{Icons.Filter} 정렬</span>
+                                {SORT_OPTIONS.map(opt => (
+                                    <button key={opt.value} onClick={() => setSortMethod(opt.value)} className={`px-2 py-1 text-xs rounded-md border transition-colors ${sortMethod === opt.value ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-400'}`}>
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs text-gray-700 font-bold shrink-0 flex items-center gap-1">{Icons.Eye} 보기</span>
+                                {PAGE_SIZE_OPTIONS.map(size => (
+                                    <button key={size} onClick={() => setItemsPerPage(size)} className={`px-2 py-1 text-xs rounded-md border transition-colors ${itemsPerPage === size ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-400'}`}>
+                                        {size}개씩
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                        
-                        {/* 결과 안내 메시지 */}
-                        {searchUrl && (
-                            <div className="bg-blue-50 p-6 text-center border-t border-blue-100">
-                                <p className="text-blue-800 font-bold mb-2">검색 결과가 새 창에서 열렸습니다!</p>
-                                <button onClick={() => window.open(searchUrl, '_blank')} className="text-sm text-blue-600 underline hover:text-blue-800">
-                                    창이 안 떴다면 여기를 클릭하세요
-                                </button>
-                                <div className="mt-4 p-2 bg-white/50 rounded text-xs text-gray-400 break-all font-mono">
-                                    {searchUrl}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             );
