@@ -15,7 +15,7 @@
 <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect } = React;
         const APP_VERSION = '2.2';
 
         const Icon = ({ path, className }) => (
@@ -375,7 +375,7 @@
             return params;
         };
 
-        function CatalogTreeNode({ node, selectedId, onSelect, expandedIds, toggleExpand, depth }) {
+        function CatalogTreeNode({ node, selectedId, onSelect, onOpenSearch, expandedIds, toggleExpand, depth }) {
             const hasChildren = node.children && node.children.length > 0;
             const isExpanded = expandedIds.has(node.id);
             const isSelected = selectedId === node.id;
@@ -386,6 +386,12 @@
                         className={`flex items-center gap-1 py-1.5 pr-2 rounded-lg cursor-pointer text-sm transition-colors ${isSelected ? 'bg-blue-100 text-blue-900 font-bold' : 'hover:bg-slate-50 text-slate-700'}`}
                         style={{ paddingLeft: `${depth * 14 + 8}px` }}
                         onClick={() => onSelect(node.id)}
+                        onDoubleClick={(e) => {
+                            e.preventDefault();
+                            onSelect(node.id);
+                            onOpenSearch(node.id);
+                        }}
+                        title="더블클릭: 수집뱅크 조회 (새 창)"
                     >
                         {hasChildren ? (
                             <button
@@ -405,6 +411,7 @@
                             node={child}
                             selectedId={selectedId}
                             onSelect={onSelect}
+                            onOpenSearch={onOpenSearch}
                             expandedIds={expandedIds}
                             toggleExpand={toggleExpand}
                             depth={depth + 1}
@@ -484,12 +491,13 @@
                 setSortMethod(''); setItemsPerPage('30');
             };
 
-            const buildSearchUrl = (searchKeywords) => {
+            const buildSearchUrl = (searchKeywords, catalogIdOverride = null) => {
                 const combinedKeyword = joinKeywordsForSearch(searchKeywords);
+                const catalogId = catalogIdOverride ?? selectedCatalogId;
 
-                if (isCatalogMode && selectedCatalogId && activeCatalog) {
+                if (isCatalogMode && catalogId && activeCatalog) {
                     if (combinedKeyword) {
-                        const catalogTerms = getCatalogSearchTerms(activeCatalog, selectedCatalogId);
+                        const catalogTerms = getCatalogSearchTerms(activeCatalog, catalogId);
                         const searchTerms = catalogTerms.length
                             ? [...catalogTerms, ...searchKeywords]
                             : searchKeywords;
@@ -500,7 +508,7 @@
                         return `${baseUrl}?${params.join('&')}`;
                     }
                     const baseUrl = 'https://www.sujipbank.com/goods/goods_list.php';
-                    const params = [`cateCd=${selectedCatalogId}`];
+                    const params = [`cateCd=${catalogId}`];
                     if (sortMethod) params.push(`sort=${sortMethod}`);
                     params.push(`pageNum=${itemsPerPage}`);
                     return `${baseUrl}?${params.join('&')}`;
@@ -526,14 +534,31 @@
                 return `${baseUrl}?${params.join('&')}`;
             };
 
-            const executeSearch = () => {
-                const searchKeywords = getSearchKeywords();
-                if (inputValue.trim() && !keywords.includes(inputValue.trim())) {
+            const openSearch = (catalogIdOverride = null) => {
+                let searchKeywords = keywords;
+                const trimmed = inputValue.trim();
+                if (trimmed && !keywords.includes(trimmed)) {
+                    searchKeywords = [...keywords, trimmed];
                     setKeywords(searchKeywords);
                     setInputValue('');
                 }
-                window.open(buildSearchUrl(searchKeywords), '_blank');
+                window.open(buildSearchUrl(searchKeywords, catalogIdOverride), '_blank');
             };
+
+            const executeSearch = () => openSearch();
+
+            useEffect(() => {
+                const onKeyDown = (e) => {
+                    if (e.key !== 'Enter') return;
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                    if (isCatalogMode && selectedCatalogId) {
+                        e.preventDefault();
+                        openSearch(selectedCatalogId);
+                    }
+                };
+                window.addEventListener('keydown', onKeyDown);
+                return () => window.removeEventListener('keydown', onKeyDown);
+            }, [isCatalogMode, selectedCatalogId]);
 
             return (
                 <div className="min-h-screen flex items-start justify-center px-4 pt-4 pb-8">
@@ -631,7 +656,7 @@
                                 <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="font-bold text-emerald-900 text-sm">{CATEGORIES.find(c => c.id === selectedCat)?.label} 카탈로그</span>
-                                        <span className="text-xs text-emerald-600">▶ 클릭하여 펼치기 · 항목 선택</span>
+                                        <span className="text-xs text-emerald-600">▶ 클릭: 펼치기 · 더블클릭 또는 Enter: 조회 (새 창)</span>
                                     </div>
                                     {selectedCatalogId && (
                                         <div className="mb-3 px-3 py-2 bg-white rounded-lg border border-emerald-200 text-sm">
@@ -640,11 +665,12 @@
                                             <span className="ml-2 text-xs font-mono text-slate-400">cateCd={selectedCatalogId}</span>
                                         </div>
                                     )}
-                                    <div className="max-h-[32rem] overflow-y-auto bg-white rounded-lg border border-emerald-100 p-2">
+                                    <div className="max-h-[32rem] overflow-y-auto bg-white rounded-lg border border-emerald-100 p-2" tabIndex={0}>
                                         <CatalogTreeNode
                                             node={activeCatalog}
                                             selectedId={selectedCatalogId}
                                             onSelect={handleCatalogSelect}
+                                            onOpenSearch={openSearch}
                                             expandedIds={expandedIds}
                                             toggleExpand={toggleExpand}
                                             depth={0}
