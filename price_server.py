@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+import socket
 import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -18,7 +19,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qsl, quote, urlencode, urljoin, urlparse, urlunparse
 from urllib.request import Request, urlopen
 
-HOST = "127.0.0.1"
+HOST = "0.0.0.0"
 PORT = 8765
 ORIGIN = f"http://{HOST}:{PORT}"
 ROOT = Path(__file__).resolve().parent
@@ -67,8 +68,8 @@ def allowed_url(url: str) -> bool:
     return (parsed.hostname or "").lower() in ALLOWED_HOSTS
 
 
-def proxy_link(url: str) -> str:
-    return ORIGIN + "/view?url=" + quote(url, safe="")
+def proxy_link(url: str, origin: str) -> str:
+    return origin + "/view?url=" + quote(url, safe="")
 
 
 def format_won(amount: int) -> str:
@@ -82,8 +83,8 @@ def price_html(amount: int, label: str = "판매완료") -> str:
     )
 
 
-def fetch_text(url: str, timeout: float = 25) -> str:
-    req = Request(url, headers={"User-Agent": UA, "Accept-Language": "ko-KR,ko;q=0.9"})
+def fetch_text(url: str, timeout: float = 25, user_agent: str = UA) -> str:
+    req = Request(url, headers={"User-Agent": user_agent or UA, "Accept-Language": "ko-KR,ko;q=0.9"})
     with urlopen(req, timeout=timeout) as resp:
         final = resp.geturl()
         if not allowed_url(final):
@@ -198,7 +199,7 @@ def fill_sold_detail(html: str) -> tuple[str, int]:
     return updated, count
 
 
-def rewrite_catalog_links(html: str, page_url: str) -> str:
+def rewrite_catalog_links(html: str, page_url: str, origin: str) -> str:
     def repl(match):
         quote_char, href = match.group(1), match.group(2)
         if href.startswith(("javascript:", "#", "mailto:", "data:")):
@@ -209,13 +210,13 @@ def rewrite_catalog_links(html: str, page_url: str) -> str:
             return match.group(0)
         if not parsed.path.endswith(("goods_list.php", "goods_search.php")):
             return match.group(0)
-        return f"href={quote_char}{proxy_link(absolute)}{quote_char}"
+        return f"href={quote_char}{proxy_link(absolute, origin)}{quote_char}"
 
     return HREF_RE.sub(repl, html)
 
 
-def point_list_form(html: str, page_url: str) -> str:
-    action = proxy_link(page_url)
+def point_list_form(html: str, page_url: str, origin: str) -> str:
+    action = proxy_link(page_url, origin)
 
     def repl(match):
         tag = match.group(0)
@@ -238,7 +239,10 @@ def inject_chrome(html: str, page_url: str, filled: int) -> str:
     del page_url
     style = (
         "<style>"
-        ".sujip-sold-price{color:#c2410c;font-weight:800;}"
+        ".item_money_box .item_price .sujip-sold-price,"
+        ".item_detail_list .sujip-sold-price{display:inline-block !important;"
+        "visibility:visible !important;color:#c2410c !important;font-weight:800;"
+        "font-size:17px !important;line-height:1.3 !important;}"
         ".sujip-sold-tag{margin-left:6px;font-size:11px;color:#667085;font-weight:700;}"
         ".sujip-price-banner{position:sticky;top:0;z-index:99999;background:#fff7ed;"
         "color:#9a3412;padding:8px 14px;font-size:13px;font-weight:700;"
@@ -254,17 +258,47 @@ def inject_chrome(html: str, page_url: str, filled: int) -> str:
     return html
 
 
-def render_page(target: str) -> tuple[str, int]:
-    html = fetch_text(target)
+OWN_CODE_RE = re.compile(
+    r"<dl\b[^>]*>\s*<dt\b[^>]*>\s*자체상품코드\s*</dt>\s*<dd\b[^>]*>.*?</dd>\s*</dl>",
+    re.I | re.S,
+)
+
+
+def hide_own_code(html: str) -> str:
+    return OWN_CODE_RE.sub("", html)
+
+
+def render_page(target: str, origin: str, user_agent: str = UA) -> tuple[str, int]:
+    html = fetch_text(target, user_agent=user_agent)
     parsed = urlparse(target)
     if parsed.path.endswith("goods_view.php"):
         html, filled = fill_sold_detail(html)
     else:
         html, filled = fill_sold_list(html)
-    html = rewrite_catalog_links(html, target)
-    html = point_list_form(html, target)
+    html = hide_own_code(html)
+    html = rewrite_catalog_links(html, target, origin)
+    html = point_list_form(html, target, origin)
     html = inject_chrome(html, target, filled)
     return html, filled
+
+
+def client_origin(headers) -> str:
+    host = (headers.get("Host") or f"127.0.0.1:{PORT}").strip()
+    if not re.fullmatch(r"[A-Za-z0-9.\-]+:\d{1,5}", host):
+        host = f"127.0.0.1:{PORT}"
+    return "http://" + host
+
+
+def lan_origin() -> str:
+    ip = "127.0.0.1"
+    try:
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        probe.connect(("8.8.8.8", 80))
+        ip = probe.getsockname()[0]
+        probe.close()
+    except OSError:
+        pass
+    return f"http://{ip}:{PORT}"
 
 
 def merge_target(query: str) -> str | None:
@@ -358,7 +392,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, INDEX_FILE.read_bytes(), "text/html; charset=utf-8", method)
             return
         if parsed.path == "/health":
-            body = json.dumps({"ok": True}).encode("utf-8")
+            body = json.dumps({"ok": True, "mobile": lan_origin()}).encode("utf-8")
             self._send(200, body, "application/json; charset=utf-8", method)
             return
         if parsed.path != "/view":
@@ -369,7 +403,11 @@ class Handler(BaseHTTPRequestHandler):
             self._send(400, "수집뱅크 주소만 열 수 있습니다.".encode("utf-8"), "text/plain; charset=utf-8", method)
             return
         try:
-            html, filled = render_page(target)
+            html, filled = render_page(
+                target,
+                client_origin(self.headers),
+                self.headers.get("User-Agent") or UA,
+            )
         except Exception as exc:
             message = f"페이지를 불러오지 못했습니다: {exc}".encode("utf-8")
             self._send(502, message, "text/plain; charset=utf-8", method)
@@ -384,10 +422,10 @@ def main() -> None:
     except OSError as exc:
         winerror = getattr(exc, "winerror", None)
         if winerror == 10048 or exc.errno in (48, 98, 10048):
-            print(f"price server already running on {ORIGIN}")
+            print(f"price server already running on http://127.0.0.1:{PORT}")
             return
         raise
-    print(f"price server on {ORIGIN}")
+    print(f"price server on http://127.0.0.1:{PORT} and {lan_origin()}")
     httpd.serve_forever()
 
 

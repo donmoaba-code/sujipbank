@@ -19,7 +19,7 @@ var _React = React,
   useState = _React.useState,
   useEffect = _React.useEffect;
 var APP_VERSION = '3.0';
-var PRICE_PROXY_ORIGIN = 'http://127.0.0.1:8765';
+var PRICE_PROXY_ORIGIN = (window.location.protocol === 'http:' || window.location.protocol === 'https:') && window.location.port === '8765' ? window.location.origin : 'http://127.0.0.1:8765';
 var Icon = function Icon(_ref) {
   var path = _ref.path,
     className = _ref.className;
@@ -1296,9 +1296,7 @@ function CatalogTreeNode(_ref2) {
     className: "w-5 shrink-0"
   }), /*#__PURE__*/React.createElement("span", {
     className: "flex-1 leading-snug"
-  }, node.label), /*#__PURE__*/React.createElement("span", {
-    className: "text-[10px] text-slate-400 font-mono shrink-0"
-  }, node.id)), hasChildren && isExpanded && node.children.map(function (child) {
+  }, node.label)), hasChildren && isExpanded && node.children.map(function (child) {
     return /*#__PURE__*/React.createElement(CatalogTreeNode, {
       key: child.id,
       node: child,
@@ -1341,6 +1339,10 @@ function App() {
     _useState14 = _slicedToArray(_useState13, 2),
     soldPriceOn = _useState14[0],
     setSoldPriceOn = _useState14[1];
+  var _useState15 = useState(''),
+    _useState16 = _slicedToArray(_useState15, 2),
+    mobileUrl = _useState16[0],
+    setMobileUrl = _useState16[1];
   var activeCatalog = CATALOG_MAP[selectedCat] || null;
   var isCatalogMode = !!activeCatalog;
   var handleCategoryClick = function handleCategoryClick(id) {
@@ -1466,7 +1468,11 @@ function App() {
   useEffect(function () {
     var cancelled = false;
     fetch(PRICE_PROXY_ORIGIN + '/health').then(function (res) {
-      if (!cancelled) setSoldPriceOn(res.ok);
+      if (cancelled || !res.ok) return null;
+      setSoldPriceOn(true);
+      return res.json();
+    }).then(function (data) {
+      if (!cancelled && data && data.mobile) setMobileUrl(data.mobile);
     })["catch"](function () {
       if (!cancelled) setSoldPriceOn(false);
     });
@@ -1541,7 +1547,9 @@ function App() {
       return setInputValue('');
     },
     className: "absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
-  }, Icons.Close))), /*#__PURE__*/React.createElement("hr", {
+  }, Icons.Close))), soldPriceOn && mobileUrl && mobileUrl !== window.location.origin && /*#__PURE__*/React.createElement("p", {
+    className: "text-[11px] text-orange-700 font-bold"
+  }, "\uD734\uB300\uD3F0\uC5D0\uC11C\uB294 ", mobileUrl, " \uB85C \uC5F4\uBA74 \uD310\uB9E4\uC644\uB8CC \uAC00\uACA9\uC774 \uBCF4\uC785\uB2C8\uB2E4."), /*#__PURE__*/React.createElement("hr", {
     className: "border-gray-100"
   }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
     className: "text-[11px] text-gray-500 mb-2"
@@ -1577,9 +1585,7 @@ function App() {
     className: "mb-3 px-3 py-2 bg-white rounded-lg border border-emerald-200 text-sm"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-emerald-700 font-bold"
-  }, "\uC120\uD0DD: "), getCatalogBreadcrumb(activeCatalog, selectedCatalogId).join(' › '), /*#__PURE__*/React.createElement("span", {
-    className: "ml-2 text-xs font-mono text-slate-400"
-  }, "cateCd=", selectedCatalogId)), /*#__PURE__*/React.createElement("div", {
+  }, "\uC120\uD0DD: "), getCatalogBreadcrumb(activeCatalog, selectedCatalogId).join(' › ')), /*#__PURE__*/React.createElement("div", {
     className: "max-h-[32rem] overflow-y-auto bg-white rounded-lg border border-emerald-100 p-2",
     tabIndex: 0
   }, /*#__PURE__*/React.createElement(CatalogTreeNode, {
