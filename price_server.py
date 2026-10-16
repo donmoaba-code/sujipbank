@@ -12,6 +12,7 @@ import re
 import socket
 import sys
 import threading
+from html import unescape
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -77,10 +78,8 @@ def format_won(amount: int) -> str:
 
 
 def price_html(amount: int, label: str = "판매완료") -> str:
-    return (
-        f'<span class="sujip-sold-price">{format_won(amount)}</span>'
-        f'<span class="sujip-sold-tag">{label}</span>'
-    )
+    del label
+    return f'<span class="sujip-sold-price">{format_won(amount)}</span>'
 
 
 def fetch_text(url: str, timeout: float = 25, user_agent: str = UA) -> str:
@@ -199,9 +198,19 @@ def fill_sold_detail(html: str) -> tuple[str, int]:
     return updated, count
 
 
+def normalize_target(url: str) -> str:
+    cleaned = url
+    for _ in range(3):
+        nxt = unescape(cleaned)
+        if nxt == cleaned:
+            break
+        cleaned = nxt
+    return cleaned
+
+
 def rewrite_catalog_links(html: str, page_url: str, origin: str) -> str:
     def repl(match):
-        quote_char, href = match.group(1), match.group(2)
+        quote_char, href = match.group(1), normalize_target(match.group(2))
         if href.startswith(("javascript:", "#", "mailto:", "data:")):
             return match.group(0)
         absolute = urljoin(page_url, href)
@@ -236,26 +245,16 @@ def point_list_form(html: str, page_url: str, origin: str) -> str:
 
 
 def inject_chrome(html: str, page_url: str, filled: int) -> str:
-    del page_url
+    del page_url, filled
     style = (
         "<style>"
         ".item_money_box .item_price .sujip-sold-price,"
         ".item_detail_list .sujip-sold-price{display:inline-block !important;"
         "visibility:visible !important;color:#c2410c !important;font-weight:800;"
         "font-size:17px !important;line-height:1.3 !important;}"
-        ".sujip-sold-tag{margin-left:6px;font-size:11px;color:#667085;font-weight:700;}"
-        ".sujip-price-banner{position:sticky;top:0;z-index:99999;background:#fff7ed;"
-        "color:#9a3412;padding:8px 14px;font-size:13px;font-weight:700;"
-        "border-bottom:1px solid #fdba74;font-family:'Malgun Gothic',sans-serif;}"
         "</style>"
     )
-    banner = (
-        f'<div class="sujip-price-banner">판매완료·품절 상품 가격 {filled}건을 '
-        "상세 페이지에서 불러와 표시했습니다.</div>"
-    )
-    html = re.sub(r"(<head[^>]*>)", r"\1" + style, html, count=1, flags=re.I)
-    html = re.sub(r"(<body[^>]*>)", r"\1" + banner, html, count=1, flags=re.I)
-    return html
+    return re.sub(r"(<head[^>]*>)", r"\1" + style, html, count=1, flags=re.I)
 
 
 OWN_CODE_RE = re.compile(
@@ -306,7 +305,7 @@ def merge_target(query: str) -> str | None:
     extra = []
     for key, value in parse_qsl(query, keep_blank_values=True):
         if key == "url" and target is None:
-            target = value
+            target = normalize_target(value)
         elif key != "url":
             extra.append((key, value))
     if not target or not allowed_url(target):

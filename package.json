@@ -1,0 +1,46 @@
+{
+  "name": "sujipbank-search",
+  "version": "3.0.0",
+  "description": "수집뱅크 통합 검색기",
+  "main": "main.js",
+  "author": "sujipbank-search-tool",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable",
+    "build:dir": "electron-builder --win dir",
+    "build:zip": "electron-builder --win dir && powershell -ExecutionPolicy Bypass -File .\\package-zip.ps1",
+    "build:all": "electron-builder --win portable dir",
+    "build:installer": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.sujipbank.search",
+    "productName": "수집뱅크 통합 검색기",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "price_server.py",
+      "app/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "executableName": "sujipbank_search_v3.0"
+    },
+    "portable": {
+      "artifactName": "sujipbank_search_v3.0_portable.exe"
+    },
+    "nsis": {
+      "artifactName": "sujipbank_search_v3.0_setup.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  }
+}
