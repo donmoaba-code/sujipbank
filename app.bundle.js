@@ -18,7 +18,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
 var _React = React,
   useState = _React.useState,
   useEffect = _React.useEffect;
-var APP_VERSION = '2.2';
+var APP_VERSION = '3.0';
 var PRICE_PROXY_ORIGIN = 'http://127.0.0.1:8765';
 var Icon = function Icon(_ref) {
   var path = _ref.path,
