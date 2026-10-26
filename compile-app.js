@@ -84,7 +84,7 @@ const deployHtml = `<!DOCTYPE html>
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
-    <script src="./app.bundle.js"></script>
+    <script src="./app.bundle.js?v=20261026"></script>
 </body>
 </html>
 `;

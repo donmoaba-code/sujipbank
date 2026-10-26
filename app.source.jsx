@@ -1,9 +1,5 @@
         const { useState, useEffect } = React;
         const APP_VERSION = '3.0';
-        const PRICE_PROXY_ORIGIN = (
-            (window.location.protocol === 'http:' || window.location.protocol === 'https:') &&
-            window.location.port === '8765'
-        ) ? window.location.origin : 'http://127.0.0.1:8765';
 
         const Icon = ({ path, className }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -504,13 +500,12 @@
                 return `${baseUrl}?${params.join('&')}`;
             };
 
-            const openSearch = async (catalogIdOverride = null) => {
+            const openSearch = (catalogIdOverride = null) => {
                 const target = buildSearchUrl(parseInputKeyword(inputValue), catalogIdOverride);
-                let url = target;
-                try {
-                    const res = await fetch(PRICE_PROXY_ORIGIN + '/health', { signal: AbortSignal.timeout(700) });
-                    if (res.ok) url = PRICE_PROXY_ORIGIN + '/view?url=' + encodeURIComponent(target);
-                } catch (e) {}
+                const onPriceServer = window.location.port === '8765';
+                const url = onPriceServer
+                    ? window.location.origin + '/view?url=' + encodeURIComponent(target)
+                    : target;
                 const opened = window.open(url, '_blank');
                 if (!opened) window.location.href = url;
             };
