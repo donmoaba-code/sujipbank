@@ -1424,6 +1424,7 @@ function App() {
         target,
         url,
         res,
+        opened,
         _args = arguments;
       return _regeneratorRuntime().wrap(function _callee$(_context) {
         while (1) switch (_context.prev = _context.next) {
@@ -1433,7 +1434,9 @@ function App() {
             url = target;
             _context.prev = 3;
             _context.next = 6;
-            return fetch(PRICE_PROXY_ORIGIN + '/health');
+            return fetch(PRICE_PROXY_ORIGIN + '/health', {
+              signal: AbortSignal.timeout(700)
+            });
           case 6:
             res = _context.sent;
             if (res.ok) url = PRICE_PROXY_ORIGIN + '/view?url=' + encodeURIComponent(target);
@@ -1443,8 +1446,9 @@ function App() {
             _context.prev = 10;
             _context.t0 = _context["catch"](3);
           case 12:
-            window.open(url, '_blank');
-          case 13:
+            opened = window.open(url, '_blank');
+            if (!opened) window.location.href = url;
+          case 14:
           case "end":
             return _context.stop();
         }

@@ -508,10 +508,11 @@
                 const target = buildSearchUrl(parseInputKeyword(inputValue), catalogIdOverride);
                 let url = target;
                 try {
-                    const res = await fetch(PRICE_PROXY_ORIGIN + '/health');
+                    const res = await fetch(PRICE_PROXY_ORIGIN + '/health', { signal: AbortSignal.timeout(700) });
                     if (res.ok) url = PRICE_PROXY_ORIGIN + '/view?url=' + encodeURIComponent(target);
                 } catch (e) {}
-                window.open(url, '_blank');
+                const opened = window.open(url, '_blank');
+                if (!opened) window.location.href = url;
             };
 
             const executeSearch = () => openSearch();
