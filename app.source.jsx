@@ -528,18 +528,20 @@
             return (
                 <div className="min-h-screen flex items-start justify-center px-4 pt-4 pb-8">
                     <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-                        <div className="bg-white px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
-                            <h1 className="text-xl font-extrabold text-blue-900 flex items-center gap-2 shrink-0">
+                        <div className="bg-white px-4 py-3 border-b border-gray-100 flex flex-wrap items-center gap-2">
+                            <h1 className="text-lg font-extrabold text-blue-900 flex items-center gap-2 min-w-0">
                                 <span className="text-blue-600">{Icons.Search}</span>
                                 수집뱅크 통합 검색
                                 <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">v{APP_VERSION}</span>
                             </h1>
-                            <button onClick={executeSearch} className="flex-1 max-w-xs h-9 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow transition-colors flex items-center justify-center gap-2">
-                                {Icons.Search} {isCatalogMode ? '카탈로그 조회 (새 창)' : '검색 결과 보기 (새 창)'}
-                            </button>
-                            <button onClick={resetAll} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold text-gray-600 transition-colors shrink-0">
-                                {Icons.Reset} 초기화
-                            </button>
+                            <div className="flex w-full items-center gap-2">
+                                <button onClick={executeSearch} className="flex-1 h-9 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow transition-colors flex items-center justify-center gap-2">
+                                    {Icons.Search} {isCatalogMode ? '카탈로그 조회' : '검색'}
+                                </button>
+                                <button onClick={resetAll} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold text-gray-600 transition-colors shrink-0">
+                                    {Icons.Reset} 초기화
+                                </button>
+                            </div>
                         </div>
 
                         <div className="p-5 space-y-5">
